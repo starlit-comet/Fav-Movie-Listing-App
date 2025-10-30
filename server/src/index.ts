@@ -1,7 +1,9 @@
+import 'dotenv/config';
 import { sequelize, User, Favorite } from './models';
 import type { FavoriteCreationAttributes } from './models/Favorite';
 import { pbkdf2Sync } from 'crypto';
 import app from './app';
+import { PORT, PASSWORD_SALT, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST } from './config/env';
 
 async function start() {
   await sequelize.authenticate();
@@ -12,11 +14,7 @@ async function start() {
   try {
     const usersCount = await User.count();
     if (usersCount === 0) {
-      const PASSWORD_SALT = '10';
-      const ITERATIONS = 100_000;
-      const KEYLEN = 64;
-      const DIGEST = 'sha512';
-      const passwordHash = pbkdf2Sync('User@123', PASSWORD_SALT, ITERATIONS, KEYLEN, DIGEST).toString('hex');
+      const passwordHash = pbkdf2Sync('User@123', PASSWORD_SALT, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST).toString('hex');
 
       const user = await User.create({
         name: 'User',
@@ -167,7 +165,6 @@ async function start() {
     console.warn('Seeding skipped/failed:', e);
   }
 
-  const PORT = Number(process.env.PORT) || 4000;
   app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);
   });

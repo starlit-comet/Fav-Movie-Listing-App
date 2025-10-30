@@ -4,10 +4,10 @@ import jwt, { Secret,SignOptions } from 'jsonwebtoken';
 import { User } from '../models';
 import { verifyPassword } from '../utils/crypto';
 import { pbkdf2Sync } from 'crypto';
+import { JWT_SECRET, PASSWORD_SALT, PBKDF2_DIGEST, PBKDF2_ITERATIONS, PBKDF2_KEYLEN } from '../config/env';
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET || 'dev-secret';
+const JWT_SECRET_VALUE: Secret = JWT_SECRET;
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "7d") as SignOptions["expiresIn"];
-const PASSWORD_SALT = "10"
 
 export async function login(req: Request, res: Response) {
   try {
@@ -28,7 +28,7 @@ export async function login(req: Request, res: Response) {
     
     const token = jwt.sign(
       { sub: user.id },
-      JWT_SECRET,
+      JWT_SECRET_VALUE,
       { expiresIn: JWT_EXPIRES_IN }
     );
 
@@ -61,16 +61,13 @@ export async function signup(req: Request, res: Response) {
     }
 
     // Hash password using the current scheme (static PASSWORD_SALT with PBKDF2 params from utils)
-    const ITERATIONS = 100_000;
-    const KEYLEN = 64;
-    const DIGEST = 'sha512';
-    const hash = pbkdf2Sync(password, PASSWORD_SALT, ITERATIONS, KEYLEN, DIGEST).toString('hex');
+    const hash = pbkdf2Sync(password, PASSWORD_SALT, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST).toString('hex');
 
     const created = await User.create({ name, email, passwordHash: hash });
 
     const token = jwt.sign(
       { sub: created.id },
-      JWT_SECRET,
+      JWT_SECRET_VALUE,
       { expiresIn: JWT_EXPIRES_IN }
     );
 

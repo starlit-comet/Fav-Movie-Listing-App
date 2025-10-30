@@ -2,11 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import authRouter from './routes/auth';
 import favoritesRouter from './routes/favorites';
+import { CORS_ORIGIN } from './config/env';
 
 const app = express();
 
 app.use(cors({
-    origin:'http://localhost:5173',
+    origin: CORS_ORIGIN,
     credentials :true,
     methods:['GET','POST','PUT','DELETE','OPTIONS'],
     allowedHeaders:['Content-Type','Authorization']

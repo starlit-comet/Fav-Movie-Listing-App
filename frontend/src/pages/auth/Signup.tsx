@@ -3,6 +3,7 @@ import AuthCard from "../../components/auth/AuthCard";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import FormField from "../../components/ui/FormField";
+import { API_URL } from "../../config/env";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -20,7 +21,6 @@ export default function Signup() {
     }
     try {
       setLoading(true);
-      const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:4000";
       const resp = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

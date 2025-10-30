@@ -5,6 +5,7 @@ import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import FavoritesTab, { type FavoriteItem } from './components/tabs/FavoritesTab'
 import AddFavoriteTab from './components/tabs/AddFavoriteTab'
+import { API_URL } from './config/env'
 // import TmdbTab from './components/tabs/TmdbTab'
 
 function useHash() {
@@ -51,7 +52,6 @@ function App() {
         }
         try {
           setChecking(true)
-          const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
           const resp = await fetch(`${API_URL}/auth/verify`, {
             headers: { Authorization: `Bearer ${token}` },
           })
@@ -92,7 +92,6 @@ function App() {
       isFetchingRef.current = true
       lastRequestedOffsetRef.current = currentOffset
       setFavLoading(true)
-      const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
       const params = new URLSearchParams({ limit: String(favLimit), offset: String(currentOffset) })
       const resp = await fetch(`${API_URL}/favorites?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -207,7 +206,16 @@ function App() {
               {activeTab === 'favorites' && (
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Your favorite movies</h2>
-                  <FavoritesTab items={favorites} loading={favLoading} />
+                  <FavoritesTab
+                    items={favorites}
+                    loading={favLoading}
+                    onItemUpdated={(item) => {
+                      setFavorites((prev) => prev.map((p) => (p.id === item.id ? item : p)))
+                    }}
+                    onItemDeleted={(id) => {
+                      setFavorites((prev) => prev.filter((p) => p.id !== id))
+                    }}
+                  />
                   <div ref={loadMoreRef} className="h-8" />
                   <div className="mt-2 text-sm text-gray-500">
                     {favLoading ? 'Loading more…' : favHasMore ? '' : 'No more items'}

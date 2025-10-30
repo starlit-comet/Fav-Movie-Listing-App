@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt,{JwtPayload} from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+const SECRET = JWT_SECRET;
 
 // type JwtPayload = { sub: number; role?: string; iat?: number; exp?: number };
 
@@ -12,7 +13,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, SECRET) as JwtPayload;
     (req as any).user = { id: decoded.sub, role: decoded.role };
     return next();
   } catch {

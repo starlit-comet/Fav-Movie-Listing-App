@@ -1,4 +1,8 @@
-import { memo } from 'react';
+import { memo, useMemo, useState } from 'react';
+import Modal from '../ui/Modal';
+import FavoriteForm, { type FavoriteFormValues } from '../forms/FavoriteForm';
+import { useToast } from '../ui/ToastProvider';
+import { API_URL } from '../../config/env';
 export type FavoriteItem = {
   id: number;
   title: string;
@@ -9,15 +13,35 @@ export type FavoriteItem = {
   durationMinutes?: number | null;
   year?: number | null;
   rating?: number | null;
+  description?: string | null;
   createdAt?: string;
 };
 
 interface Props {
   items: FavoriteItem[];
   loading?: boolean;
+  onItemUpdated?: (item: FavoriteItem) => void;
+  onItemDeleted?: (id: number) => void;
 }
 
-function FavoritesTabComp({ items, loading }: Props) {
+function FavoritesTabComp({ items, loading, onItemUpdated, onItemDeleted }: Props) {
+  const { success, error } = useToast();
+  const [editing, setEditing] = useState<FavoriteItem | null>(null);
+  const [toDelete, setToDelete] = useState<FavoriteItem | null>(null);
+  const initialForm: FavoriteFormValues | null = useMemo(() => {
+    if (!editing) return null;
+    return {
+      title: editing.title,
+      type: editing.type,
+      year: editing.year != null ? String(editing.year) : '',
+      rating: editing.rating != null ? String(editing.rating) : '',
+      director: editing.director || '',
+      durationMinutes: editing.durationMinutes != null ? String(editing.durationMinutes) : '',
+      location: editing.location || '',
+      budget: editing.budget != null ? String(editing.budget as any) : '',
+      description: editing.description || '',
+    };
+  }, [editing]);
   if (!items || items.length === 0) {
     return (
       <p className="mt-2 text-gray-600">{loading ? 'Loading...' : 'No favorites yet.'}</p>
@@ -25,7 +49,7 @@ function FavoritesTabComp({ items, loading }: Props) {
   }
 
   const Row = memo(({ f }: { f: FavoriteItem }) => (
-    <tr {...(f.id % 2 === 0 ? { className: "  hover:bg-gray-200" } : { className: "bg-gray-100 hover:bg-gray-300" })}>
+    <tr className="hover:bg-gray-50">
       <td className="px-3 py-2 text-gray-900">{f.id}</td>
       <td className="px-3 py-2 text-gray-900">{f.title}</td>
       <td className="px-3 py-2 text-gray-600 uppercase">{f.type}</td>
@@ -35,7 +59,35 @@ function FavoritesTabComp({ items, loading }: Props) {
       <td className="px-3 py-2 text-gray-600">{typeof f.durationMinutes === 'number' ? `${f.durationMinutes} min` : '-'}</td>
       <td className="px-3 py-2 text-gray-600">{f.year ?? '-'}</td>
       <td className="px-3 py-2 text-gray-600">
-        <button className="text-indigo-600 hover:underline" disabled>View</button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded hover:bg-gray-200"
+            title="Edit"
+            aria-label="Edit"
+            onClick={() => setEditing(f)}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-gray-700">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded hover:bg-gray-200"
+            title="Delete"
+            aria-label="Delete"
+            onClick={() => setToDelete(f)}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-red-600">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a 1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        </div>
       </td>
     </tr>
   ));
@@ -62,6 +114,80 @@ function FavoritesTabComp({ items, loading }: Props) {
           ))}
         </tbody>
       </table>
+      <Modal open={!!editing} title="Edit favorite" onClose={() => setEditing(null)}>
+        {initialForm && editing ? (
+          <FavoriteForm
+            initial={initialForm}
+            submitLabel="Save changes"
+            onSubmit={async (vals) => {
+              const token = sessionStorage.getItem('token');
+              if (!token) { error('Not authenticated'); return; }
+              const resp = await fetch(`${API_URL}/favorites/${editing.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                  title: vals.title,
+                  type: vals.type,
+                  year: vals.year ? Number(vals.year) : undefined,
+                  rating: vals.rating ? Number(vals.rating) : undefined,
+                  director: vals.director || null,
+                  durationMinutes: vals.durationMinutes ? Number(vals.durationMinutes) : undefined,
+                  description: vals.description || null,
+                  location: vals.location || null,
+                  budget: vals.budget ? Number(vals.budget) : undefined,
+                }),
+              });
+              const data = await resp.json().catch(() => ({}));
+              if (!resp.ok) {
+                error('Failed to update favorite', data?.message);
+                return;
+              }
+              success('Favorite updated');
+              setEditing(null);
+              if (onItemUpdated) onItemUpdated(data);
+            }}
+            onCancel={() => setEditing(null)}
+          />
+        ) : null}
+      </Modal>
+
+      <Modal open={!!toDelete} title="Delete favorite" onClose={() => setToDelete(null)}>
+        {toDelete ? (
+          <div>
+            <p className="text-sm text-gray-700">Are you sure you want to delete <span className="font-medium">{toDelete.title}</span>?</p>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500"
+                onClick={async () => {
+                  const token = sessionStorage.getItem('token');
+                  if (!token) { error('Not authenticated'); return; }
+                  const resp = await fetch(`${API_URL}/favorites/${toDelete.id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!resp.ok) {
+                    const data = await resp.json().catch(() => ({}));
+                    error('Failed to delete favorite', data?.message);
+                    return;
+                  }
+                  success('Favorite deleted');
+                  const deletedId = toDelete.id;
+                  setToDelete(null);
+                  if (onItemDeleted) onItemDeleted(deletedId);
+                }}
+              >
+                Delete
+              </button>
+              <button
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900"
+                onClick={() => setToDelete(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

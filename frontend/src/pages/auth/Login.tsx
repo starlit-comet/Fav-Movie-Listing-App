@@ -3,6 +3,7 @@ import AuthCard from "../../components/auth/AuthCard";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import FormField from "../../components/ui/FormField";
+import { API_URL } from "../../config/env";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -19,7 +20,6 @@ export default function Login() {
     }
     try {
       setLoading(true);
-      const API_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:4000";
       const resp = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
