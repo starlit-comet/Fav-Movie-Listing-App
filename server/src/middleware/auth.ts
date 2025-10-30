@@ -1,0 +1,21 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt,{JwtPayload} from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+
+// type JwtPayload = { sub: number; role?: string; iat?: number; exp?: number };
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const auth = req.headers.authorization || '';
+  const [scheme, token] = auth.split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    (req as any).user = { id: decoded.sub, role: decoded.role };
+    return next();
+  } catch {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+}
