@@ -16,7 +16,6 @@ export async function login(req: Request, res: Response) {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
-
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -85,6 +84,25 @@ export async function signup(req: Request, res: Response) {
     });
   } catch (err) {
     console.error('Signup error', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+export async function verify(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id as number | undefined;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(401).json({ message: 'Unauthorized' });
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (err) {
+    console.error('Verify error', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

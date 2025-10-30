@@ -1,4 +1,4 @@
-import { DataTypes, InferAttributes, InferCreationAttributes, Model, Optional } from 'sequelize';
+import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import { User } from './User';
 
@@ -22,7 +22,7 @@ export interface FavoriteAttributes {
 
 export type FavoriteCreationAttributes = Optional<FavoriteAttributes, 'id' | 'director' | 'budget' | 'location' | 'durationMinutes' | 'year' | 'description' | 'rating' | 'createdAt' | 'updatedAt'>;
 
-export class Favorite extends Model<InferAttributes<Favorite>, InferCreationAttributes<Favorite>> implements FavoriteAttributes {
+export class Favorite extends Model<FavoriteAttributes, FavoriteCreationAttributes> implements FavoriteAttributes {
   declare id: number;
   declare userId: number;
   declare title: string;
@@ -34,8 +34,8 @@ export class Favorite extends Model<InferAttributes<Favorite>, InferCreationAttr
   declare year: number | null;
   declare description: string | null;
   declare rating: number | null;
-  declare readonly createdAt: Date;
-  declare readonly updatedAt: Date;
+  declare readonly createdAt?: Date;
+  declare readonly updatedAt?: Date;
 }
 
 Favorite.init(

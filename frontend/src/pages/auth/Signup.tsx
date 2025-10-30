@@ -31,8 +31,8 @@ export default function Signup() {
         setError(data?.message || "Signup failed");
         return;
       }
-      if (data?.token) localStorage.setItem("token", data.token);
-      if (data?.user) localStorage.setItem("user", JSON.stringify(data.user));
+      if (data?.token) sessionStorage.setItem("token", data.token);
+      if (data?.user) sessionStorage.setItem("user", JSON.stringify(data.user));
       window.location.hash = "#/";
     } catch (err) {
       setError("Signup failed");
